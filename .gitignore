@@ -1,0 +1,17 @@
+# Python-specific ignores
+__pycache__/
+*.pyc
+*.pyd
+.pytest_cache/
+venv/
+env/
+*.egg-info
+
+# Node.js specific ignores
+node_modules/
+
+# Editor swap files
+*.swp
+
+# OS generated files
+.DS_Store
