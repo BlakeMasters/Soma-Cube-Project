@@ -46,43 +46,43 @@ soma-puzzle-solver/
    cd soma-puzzle-solver
    ```
 
-2. Clone the Yass solver repository:
-   ```
-   git clone https://github.com/gfonseca/yass.git backend/yass
-   ```
-
-3. Compile the Yass solver using the included makefile:
+2. Compile the Yass solver using the included makefile:
    ```
    cd backend/yass
    make
    cd ../..
    ```
 
-4. Install Python dependencies:
+3. Play around with yass using different inputs and flags
    ```
-   pip install -r requirements.txt
+   ./soma -h
+   ./soma -a figures/cube.soma
    ```
+
 
 ### Running the Application
 
-1. Start the Flask server:
+1. Setup a virtual environment
+   ```
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+2. Install Python dependencies:
+   ```
+   pip3 install -r requirements.txt
+   ```
+
+3. Start the Flask server:
    ```
    cd backend
    python app.py
    ```
 
-2. Open your browser and navigate to:
+4. Open your browser and navigate to:
    ```
    http://localhost:5000
    ```
-
-## API Endpoints
-
-- `GET /api/shapes` - Returns all SOMA piece definitions
-- `POST /api/solve` - Submits a puzzle configuration and returns solutions
-- `POST /api/hint` - Provides a single solution hint for a given configuration
-- `POST /api/validate` - Checks if a configuration is valid/solvable
-- `POST /api/validate_orientation` - Validates a specific piece orientation
 
 ## Current Status
 
@@ -96,10 +96,9 @@ This application is currently in development with basic functionality implemente
 We plan to enhance the application with the following features:
 
 - Improved 3D visualization with rotating and zooming capabilities
-- Step-by-step solution animations
+- Hint function will display next viable piece on the grid
 - User accounts to save puzzle progress
 - Library of classic SOMA cube challenges
-- Mobile-friendly responsive design
 - Performance optimizations for larger puzzle configurations
 - Additional puzzle statistics and analysis tools
 
