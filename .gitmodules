@@ -1,0 +1,3 @@
+[submodule "backend/yass"]
+	path = backend/yass
+	url = https://github.com/thanks4opensource/yass.git
