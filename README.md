@@ -1,33 +1,40 @@
 # SOMA Cube Puzzle Solver
 
-A web-based application for visualizing, creating, and solving SOMA cube puzzles by converting Three.js objects into text format for the YASS text-based solver
+A modern web-based application for visualizing, creating, and solving SOMA cube puzzles, integrating a 3D GUI with the YASS text-based solver.
 
 ## Overview
 
 This application provides an interactive GUI for working with SOMA cube puzzles - a classic 3D puzzle consisting of 7 irregular pieces that can be assembled into a 3x3x3 cube. Users can:
 
-- Visualize and manipulate SOMA cube pieces
-- Build custom SOMA cube configurations
-- Validate puzzle configurations
+- Visualize and manipulate SOMA cube pieces in 3D
+- Build and validate custom SOMA cube configurations
 - Get hints for solving difficult puzzles
-- Generate complete solutions
+- Generate and track all 240 unique solutions
 
 The project combines a Flask backend that interfaces with the [Yass SOMA cube solver](https://github.com/thanks4opensource/yass) and a web-based frontend for user interaction.
 
 ## Project Structure
 
 ```
-soma-puzzle-solver/
+soma-solver/
 ├── backend/
-│   ├── app.py             # Flask server and API endpoints
-│   ├── shapes.json        # SOMA pieces definitions
-│   └── yass/              # Yass solver (cloned from GitHub)
+│   ├── app.py               # Flask server and API endpoints
+│   ├── parse_shapes.py      # Shape parsing and conversion utilities
+│   ├── utils.py             # Solution normalization and validation
+│   ├── solutions.json       # User-discovered solutions
+│   └── yass/                # Yass solver (cloned from GitHub)
 ├── frontend/
-│   ├── index.html         # Main HTML interface
-│   ├── main.js            # Frontend application logic
-│   ├── styles.css         # Application styling
-│   └── assets/            # Images and other static assets
-└── requirements.txt       # Python dependencies
+│   ├── index.html           # Main HTML interface
+│   ├── style.css            # Application styling
+│   └── js/
+│       ├── main.js          # Frontend application entry point
+│       ├── constants.js     # Piece definitions and constants
+│       ├── gridManager.js   # Grid logic and state
+│       ├── pieceManager.js  # Piece management and UI
+│       ├── renderer.js      # Three.js rendering logic
+│       ├── uiController.js  # UI event handling and API calls
+│       └── utils.js         # Frontend utility functions
+└── requirements.txt         # Python dependencies
 ```
 
 ## Setup & Installation
@@ -42,8 +49,8 @@ soma-puzzle-solver/
 
 1. Clone this repository:
    ```
-   git clone https://github.com/yourusername/soma-puzzle-solver.git
-   cd soma-puzzle-solver
+   git clone https://github.com/BlakeMasters/Soma-Cube-Project.git
+   cd soma-solver
    ```
 
 2. Compile the Yass solver using the included makefile:
@@ -58,7 +65,6 @@ soma-puzzle-solver/
    ./soma -h
    ./soma -a figures/cube.soma
    ```
-
 
 ### Running the Application
 
@@ -95,7 +101,7 @@ This application is currently in development with basic functionality implemente
 
 We plan to enhance the application with the following features:
 
-- Improved 3D visualization with rotating and zooming capabilities
+- Implementing GUIs for varying solutions and pieces (pyramid, scorpion, 2x2x2)
 - Hint function will display next viable piece on the grid
 - User accounts to save puzzle progress
 - Library of classic SOMA cube challenges
@@ -104,10 +110,4 @@ We plan to enhance the application with the following features:
 
 ## Credits
 
-- [Yass SOMA Cube Solver](https://github.com/gfonseca/yass) - The backend solver engine used in this project
-- Original Yass implementation by [Guilherme Fonseca](https://github.com/gfonseca)
-- SOMA Cube was invented by Piet Hein in 1933
-
-## License
-
-[MIT License](LICENSE)
+- [Yass SOMA Cube Solver](https://github.com/thanks4opensource/yass) - The backend solver engine used in this project. Developed by Mark R. Rubin
