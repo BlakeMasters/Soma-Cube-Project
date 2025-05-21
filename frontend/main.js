@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // Constants
 const GRID_SIZE = 3;
+let gridSize = { x: 3, y: 3, z: 3 }; //new for transformable grid
 const CELL_SIZE = 1;
 const PIECE_OPACITY = 0.95;
 const PIECE_HIGHLIGHT_OPACITY = 0.6;
@@ -13,10 +14,10 @@ let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2();
 let selectedPiece = null;
 let pieces = [];
-let gridState = Array(GRID_SIZE).fill().map(() => 
-    Array(GRID_SIZE).fill().map(() => 
-        Array(GRID_SIZE).fill(null)
-    )
+let gridState = Array(gridSize.x).fill().map(() =>
+  Array(gridSize.y).fill().map(() =>
+    Array(gridSize.z).fill(null)
+  )
 );
 let gridGroup;
 
@@ -69,48 +70,93 @@ const SOMA_PIECES = [
     }
 ];
 
-// Grid creation
+// Grid creation, old commented, new abstraction testing
+// function createGrid() {
+//     const gridGroup = new THREE.Group();
+//     const lineMaterial = new THREE.LineBasicMaterial({ color: 0x808080, linewidth: 2 });
+//     const min = 0;
+//     const max = GRID_SIZE;
+
+//     // Create vertical lines (Y axis)
+//     for (let x = 0; x <= GRID_SIZE; x++) {
+//         for (let z = 0; z <= GRID_SIZE; z++) {
+//             const geometry = new THREE.BufferGeometry().setFromPoints([
+//                 new THREE.Vector3(min + x, min, min + z),
+//                 new THREE.Vector3(min + x, max, min + z)
+//             ]);
+//             gridGroup.add(new THREE.Line(geometry, lineMaterial));
+//         }
+//     }
+
+//     // Create horizontal lines in X direction (Y fixed)
+//     for (let y = 0; y <= GRID_SIZE; y++) {
+//         for (let z = 0; z <= GRID_SIZE; z++) {
+//             const geometry = new THREE.BufferGeometry().setFromPoints([
+//                 new THREE.Vector3(min, min + y, min + z),
+//                 new THREE.Vector3(max, min + y, min + z)
+//             ]);
+//             gridGroup.add(new THREE.Line(geometry, lineMaterial));
+//         }
+//     }
+
+//     // Create horizontal lines in Z direction (Y fixed)
+//     for (let x = 0; x <= GRID_SIZE; x++) {
+//         for (let y = 0; y <= GRID_SIZE; y++) {
+//             const geometry = new THREE.BufferGeometry().setFromPoints([
+//                 new THREE.Vector3(min + x, min + y, min),
+//                 new THREE.Vector3(min + x, min + y, max)
+//             ]);
+//             gridGroup.add(new THREE.Line(geometry, lineMaterial));
+//         }
+//     }
+
+//     return gridGroup;
+// } 
 function createGrid() {
-    const gridGroup = new THREE.Group();
-    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x808080, linewidth: 2 });
-    const min = 0;
-    const max = GRID_SIZE;
+    const group = new THREE.Group();
+    const mat = new THREE.LineBasicMaterial({ color: 0x808080 });
 
-    // Create vertical lines (Y axis)
-    for (let x = 0; x <= GRID_SIZE; x++) {
-        for (let z = 0; z <= GRID_SIZE; z++) {
-            const geometry = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(min + x, min, min + z),
-                new THREE.Vector3(min + x, max, min + z)
-            ]);
-            gridGroup.add(new THREE.Line(geometry, lineMaterial));
+    const { x: maxX, y: maxY, z: maxZ } = gridSize;
+
+    for (let x = 0; x <= maxX; x++) {
+        for (let z = 0; z <= maxZ; z++) {
+            group.add(new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(x, 0, z),
+                    new THREE.Vector3(x, maxY, z)
+                ]),
+                mat
+            ));
         }
     }
 
-    // Create horizontal lines in X direction (Y fixed)
-    for (let y = 0; y <= GRID_SIZE; y++) {
-        for (let z = 0; z <= GRID_SIZE; z++) {
-            const geometry = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(min, min + y, min + z),
-                new THREE.Vector3(max, min + y, min + z)
-            ]);
-            gridGroup.add(new THREE.Line(geometry, lineMaterial));
+    for (let y = 0; y <= maxY; y++) {
+        for (let z = 0; z <= maxZ; z++) {
+            group.add(new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(0, y, z),
+                    new THREE.Vector3(maxX, y, z)
+                ]),
+                mat
+            ));
         }
     }
 
-    // Create horizontal lines in Z direction (Y fixed)
-    for (let x = 0; x <= GRID_SIZE; x++) {
-        for (let y = 0; y <= GRID_SIZE; y++) {
-            const geometry = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(min + x, min + y, min),
-                new THREE.Vector3(min + x, min + y, max)
-            ]);
-            gridGroup.add(new THREE.Line(geometry, lineMaterial));
+    for (let x = 0; x <= maxX; x++) {
+        for (let y = 0; y <= maxY; y++) {
+            group.add(new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(x, y, 0),
+                    new THREE.Vector3(x, y, maxZ)
+                ]),
+                mat
+            ));
         }
     }
 
-    return gridGroup;
+    return group;
 }
+
 
 // Piece creation and management
 function createPiecesPanel() {
@@ -129,20 +175,105 @@ function createPiecesPanel() {
     });
 }
 
+// function resizeGrid() {
+//     const x = parseInt(document.getElementById('gridX').value);
+//     const y = parseInt(document.getElementById('gridY').value);
+//     const z = parseInt(document.getElementById('gridZ').value);
+//     gridSize = { x, y, z };
+
+//     //resets
+//     gridState = Array(x).fill().map(() => 
+//         Array(y).fill().map(() => Array(z).fill(null))
+//     );
+//     scene.remove(gridGroup);
+//     gridGroup = createGrid();
+//     scene.add(gridGroup);
+//     resetGrid();
+//     showMessage(`Resized grid to ${x} × ${y} × ${z}`);
+// }
+function resizeGrid() {
+    console.log('sanity check for resizeGrid called', gridSize);
+    const x = parseInt(document.getElementById('gridX').value, 10);
+    const y = parseInt(document.getElementById('gridY').value, 10);
+    const z = parseInt(document.getElementById('gridZ').value, 10);
+    gridSize = { x, y, z };
+
+    // rebuild grid visuals
+    scene.remove(gridGroup);
+    gridGroup = createGrid();
+    scene.add(gridGroup);
+
+    // reset pieces + state
+    resetGrid();
+
+    // re‐center camera on the new grid
+    camera.position.set(x + 2, y + 2, z + 2);
+    camera.lookAt(x / 2, y / 2, z / 2);
+    showMessage(`Resized grid to ${x} × ${y} × ${z}`);
+}
+
+function renderGeneratedShapes(data) {
+    resetGrid();  //Clear old
+    pieces = [];  //manage them separately
+
+    Object.entries(data).forEach(([size, shapeList], index) => {
+        shapeList.forEach((coords, shapeIndex) => {
+            const group = new THREE.Group();
+            coords.forEach(([x, y, z]) => {
+                const geo = new THREE.BoxGeometry(1, 1, 1);
+                const mat = new THREE.MeshPhongMaterial({ 
+                    color: new THREE.Color().setHSL(Math.random(), 0.5, 0.5),
+                    transparent: true,
+                    opacity: 0.9
+                });
+                const cube = new THREE.Mesh(geo, mat);
+                cube.position.set(x + 0.5, y + 0.5, z + 0.5);
+                group.add(cube);
+            });
+            group.position.set(
+                Math.floor(gridSize.x / 2),
+                Math.floor(gridSize.y / 2),
+                Math.floor(gridSize.z / 2)
+            );
+            scene.add(group);
+            pieces.push(group);
+        });
+    });
+
+    showMessage("Generated and loaded new pieces");
+}
+
+
 // Grid-based validity check
+// function isBoardValid() {
+//     // Scan the grid for overlaps and out-of-bounds
+//     let seen = {};
+//     for (let x = 0; x < GRID_SIZE; x++) {
+//         for (let y = 0; y < GRID_SIZE; y++) {
+//             for (let z = 0; z < GRID_SIZE; z++) {
+//                 const val = gridState[x][y][z];
+//                 if (val) {
+//                     const key = `${x},${y},${z}`;
+//                     if (seen[key]) {
+//                         // Overlap detected
+//                         return false;
+//                     }
+//                     seen[key] = true;
+//                 }
+//             }
+//         }
+//     }
+//     return true;
+// }
 function isBoardValid() {
-    // Scan the grid for overlaps and out-of-bounds
     let seen = {};
-    for (let x = 0; x < GRID_SIZE; x++) {
-        for (let y = 0; y < GRID_SIZE; y++) {
-            for (let z = 0; z < GRID_SIZE; z++) {
+    for (let x = 0; x < gridSize.x; x++) {
+        for (let y = 0; y < gridSize.y; y++) {
+            for (let z = 0; z < gridSize.z; z++) {
                 const val = gridState[x][y][z];
                 if (val) {
                     const key = `${x},${y},${z}`;
-                    if (seen[key]) {
-                        // Overlap detected
-                        return false;
-                    }
+                    if (seen[key]) return false;
                     seen[key] = true;
                 }
             }
@@ -151,33 +282,74 @@ function isBoardValid() {
     return true;
 }
 
+// function selectOrCreatePiece(piece) {
+//     // If a piece is currently selected, check if the board is valid
+//     if (selectedPiece && !isBoardValid()) {
+//         showMessage('Current board state is invalid! Please move or rotate the piece before switching.');
+//         return;
+//     }
+//     // Deselect current piece if any
+//     if (selectedPiece) {
+//         setPieceHighlight(selectedPiece, false);
+//         highlightPanel(selectedPiece.userData.pieceId, false);
+//     }
+//     // If piece is already placed, select it
+//     if (placedPieces[piece.id]) {
+//         selectedPiece = placedPieces[piece.id];
+//     } else {
+//         // Create new piece at center of grid
+//         const mesh = createPieceMesh(piece);
+//         const centerPos = Math.floor(GRID_SIZE / 2);
+//         mesh.position.set(centerPos, centerPos, centerPos);
+//         scene.add(mesh);
+//         placedPieces[piece.id] = mesh;
+//         selectedPiece = mesh;
+//         updateGridState();
+//     }
+//     setPieceHighlight(selectedPiece, true);
+//     highlightPanel(piece.id, true);
+// }
 function selectOrCreatePiece(piece) {
-    // If a piece is currently selected, check if the board is valid
     if (selectedPiece && !isBoardValid()) {
-        showMessage('Current board state is invalid! Please move or rotate the piece before switching.');
+        showMessage(
+          'Current board state is invalid! Please move or rotate the piece before switching.'
+        );
         return;
     }
-    // Deselect current piece if any
+
+    //deselect
     if (selectedPiece) {
         setPieceHighlight(selectedPiece, false);
         highlightPanel(selectedPiece.userData.pieceId, false);
     }
-    // If piece is already placed, select it
+
+    // 3.select if on board
     if (placedPieces[piece.id]) {
         selectedPiece = placedPieces[piece.id];
+
     } else {
-        // Create new piece at center of grid
+        // 4.centered in the middle
         const mesh = createPieceMesh(piece);
-        const centerPos = Math.floor(GRID_SIZE / 2);
-        mesh.position.set(centerPos, centerPos, centerPos);
+        mesh.position.set(
+            Math.floor(gridSize.x / 2),
+            Math.floor(gridSize.y / 2),
+            Math.floor(gridSize.z / 2)
+        );
         scene.add(mesh);
+
+        //Track it in placedPieces and mark it as selected
         placedPieces[piece.id] = mesh;
         selectedPiece = mesh;
+
+        //update internal gridState array to account for the new piece
         updateGridState();
     }
+
+    //highlight the newly selected piece both in 3D and in the UI panel
     setPieceHighlight(selectedPiece, true);
     highlightPanel(piece.id, true);
 }
+
 
 function setPieceHighlight(mesh, highlight) {
     mesh.traverse(obj => {
@@ -261,21 +433,47 @@ function rotateShape(shape, rotation) {
     return rotated.map(v => [v.x, v.y, v.z]);
 }
 
+// function updateGridState() {
+//     // Clear grid
+//     gridState = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null)));
+//     // Place all pieces
+//     for (const id in placedPieces) {
+//         const mesh = placedPieces[id];
+//         const shape = rotateShape(mesh.userData.baseShape, mesh.userData.rotation);
+//         for (const [x, y, z] of shape) {
+//             const gx = Math.round(mesh.position.x + x);
+//             const gy = Math.round(mesh.position.y + y);
+//             const gz = Math.round(mesh.position.z + z);
+//             if (gx >= 0 && gx < GRID_SIZE && gy >= 0 && gy < GRID_SIZE && gz >= 0 && gz < GRID_SIZE) {
+//                 gridState[gx][gy][gz] = mesh.userData.pieceId;
+//             }
+//         }
+//     }
+// }
 function updateGridState() {
-    // Clear grid
-    gridState = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null)));
-    // Place all pieces
+    // clear gridState
+    gridState = Array(gridSize.x).fill().map(() =>
+        Array(gridSize.y).fill().map(() =>
+            Array(gridSize.z).fill(null)
+        )
+    );
+
+    // place every piece within new bounds
     for (const id in placedPieces) {
         const mesh = placedPieces[id];
         const shape = rotateShape(mesh.userData.baseShape, mesh.userData.rotation);
-        for (const [x, y, z] of shape) {
-            const gx = Math.round(mesh.position.x + x);
-            const gy = Math.round(mesh.position.y + y);
-            const gz = Math.round(mesh.position.z + z);
-            if (gx >= 0 && gx < GRID_SIZE && gy >= 0 && gy < GRID_SIZE && gz >= 0 && gz < GRID_SIZE) {
+        shape.forEach(([dx, dy, dz]) => {
+            const gx = Math.round(mesh.position.x + dx);
+            const gy = Math.round(mesh.position.y + dy);
+            const gz = Math.round(mesh.position.z + dz);
+            if (
+                gx >= 0 && gx < gridSize.x &&
+                gy >= 0 && gy < gridSize.y &&
+                gz >= 0 && gz < gridSize.z
+            ) {
                 gridState[gx][gy][gz] = mesh.userData.pieceId;
             }
-        }
+        });
     }
 }
 
@@ -326,14 +524,28 @@ function onWindowResize() {
     renderer.setSize(width, height);
 }
 
+// function resetGrid() {
+//     // Remove all pieces from the scene and clear state
+//     for (const id in placedPieces) {
+//         scene.remove(placedPieces[id]);
+//     }
+//     placedPieces = {};
+//     selectedPiece = null;
+//     updateGridState();
+//     showMessage('Grid has been reset');
+// }
 function resetGrid() {
-    // Remove all pieces from the scene and clear state
-    for (const id in placedPieces) {
-        scene.remove(placedPieces[id]);
-    }
+    // remove all meshes
+    Object.values(placedPieces).forEach(mesh => scene.remove(mesh));
     placedPieces = {};
     selectedPiece = null;
-    updateGridState();
+
+    // reset gridState
+    gridState = Array(gridSize.x).fill().map(() =>
+        Array(gridSize.y).fill().map(() =>
+            Array(gridSize.z).fill(null)
+        )
+    );
     showMessage('Grid has been reset');
 }
 
@@ -342,12 +554,15 @@ function init() {
     // Create scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xf0f0f0);
+    const cx = gridSize.x / 2,
+        cy = gridSize.y / 2,
+        cz = gridSize.z / 2;
     
     // Create camera
     const aspect = window.innerWidth / window.innerHeight;
     camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
-    camera.position.set(5, 5, 5);
-    camera.lookAt(GRID_SIZE/2, GRID_SIZE/2, GRID_SIZE/2);
+    camera.position.set(gridSize.x + 2, gridSize.y + 2, gridSize.z + 2);
+    camera.lookAt(cx, cy, cz);
     
     // Create renderer
     renderer = new THREE.WebGLRenderer({ 
@@ -385,6 +600,8 @@ function init() {
     controls.minDistance = 3;
     controls.maxDistance = 20;
     controls.maxPolarAngle = Math.PI / 2;
+    controls.target.set(cx, cy, cz);
+    controls.update();
     
     // Add event listeners
     window.addEventListener('mousemove', onMouseMove);
@@ -400,6 +617,7 @@ function animate() {
     }
     
     requestAnimationFrame(animate);
+
     controls.update();
     renderer.render(scene, camera);
 }
@@ -420,16 +638,50 @@ function showMessage(message, duration = 2000) {
 }
 
 // Initialize the application when the DOM is loaded
+// document.addEventListener('DOMContentLoaded', () => {
+//     init();
+//     createPiecesPanel();
+    
+//     // Add keyboard event listener
+//     window.addEventListener('keydown', handleKeyDown);
+    
+//     // Expose functions to global scope for HTML onclick handlers
+//     window.removeSelectedPiece = removeSelectedPiece;
+//     window.resetGrid = resetGrid;
+//     window.movePiece = movePiece;
+//     window.rotatePiece = rotatePiece;
+// });
 document.addEventListener('DOMContentLoaded', () => {
     init();
     createPiecesPanel();
     
     // Add keyboard event listener
     window.addEventListener('keydown', handleKeyDown);
-    
-    // Expose functions to global scope for HTML onclick handlers
+
+    // Bind rulesForm submission for uploading shape rules
+    document.getElementById('rulesForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const fd = new FormData();
+        const file = document.getElementById('rulesFile').files[0];
+        if (!file) return alert('Please select your rules file.');
+        fd.append('rules', file);
+
+        fetch('/api/generateShapes', {
+            method: 'POST',
+            body: fd
+        })
+        .then(res => res.json())
+        .then(renderGeneratedShapes)
+        .catch(console.error);
+    });
+
+    // Wire up the Apply Grid Size button
+    document.getElementById('applyGridBtn')
+        .addEventListener('click', resizeGrid);
+
+    // Expose other functions if you still use inline onclicks elsewhere
     window.removeSelectedPiece = removeSelectedPiece;
-    window.resetGrid = resetGrid;
-    window.movePiece = movePiece;
-    window.rotatePiece = rotatePiece;
+    window.resetGrid           = resetGrid;
+    window.movePiece           = movePiece;
+    window.rotatePiece         = rotatePiece;
 });

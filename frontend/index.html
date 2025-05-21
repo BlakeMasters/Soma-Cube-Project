@@ -56,6 +56,15 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             z-index: 100;
         }
+        .form-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 5px;
+        }
         
         button {
             padding: 10px 20px;
@@ -70,6 +79,15 @@
         
         button:hover {
             background-color: #45a049;
+        }
+
+        input[type="number"],
+        input[type="file"] {
+            padding: 6px 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
         }
         
         /* Main container */
@@ -175,6 +193,19 @@
         <button onclick="getHint()">Get Hint</button>
         <button onclick="resetGrid()">Reset Grid</button>
         <button onclick="removeSelectedPiece()">Remove Selected</button>
+    </div>
+    <div class="form-section">
+        <label>X: <input type="number" id="gridX" value="3" min="1"></label>
+        <label>Y: <input type="number" id="gridY" value="3" min="1"></label>
+        <label>Z: <input type="number" id="gridZ" value="3" min="1"></label>
+        <button id="applyGridBtn">Apply Grid Size</button>
+    </div>
+
+    <div class="form-section">
+        <form id="rulesForm" enctype="multipart/form-data">
+            <input type="file" id="rulesFile" name="rules" accept=".txt" required />
+            <button type="submit">Generate Pieces</button>
+        </form>
     </div>
     
     <div id="instructions">
