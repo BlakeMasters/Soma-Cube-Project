@@ -1,227 +1,214 @@
-import subprocess
 import os
-import tempfile
 import logging
 import json
+from typing import Set, Tuple, Optional
 
 # Configure logging
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# YASS format piece identifiers
-VALID_PIECES = {'3', 'l', 't', 'z', 'p', 'n', 'c', '.'}  # Including '.' for empty cells
+# Constants
+VALID_PIECES = {'3', 'l', 't', 'z', 'p', 'n', 'c', '.'}
+VALID_GRID_SPACES = {'*', 'o'}  # Both '*' and 'o' indicate valid grid spaces
 
-SOLUTIONS_FILE = 'solutions.json'
-
-def load_solutions():
-    if not os.path.exists(SOLUTIONS_FILE):
-        return set()
-
+def load_solutions(shape_id: str) -> Set[str]:
+    """Load known solutions from the shape-specific solutions file."""
+    solutions_dir = os.path.join(os.path.dirname(__file__), 'solutions')
+    os.makedirs(solutions_dir, exist_ok=True)
+    solutions_file = os.path.join(solutions_dir, f"{shape_id}_solutions.json")
+    
     try:
-        with open(SOLUTIONS_FILE, 'r') as f:
+        if not os.path.exists(solutions_file):
+            return set()
+        with open(solutions_file, 'r') as f:
             solutions = json.load(f)
-            return {normalize_solution(s) for s in solutions}
+            return set(solutions)
     except Exception as e:
-        logger.error(f"Error loading solutions: {str(e)}")
+        logger.error(f"Error loading solutions for {shape_id}: {str(e)}")
         return set()
 
-def save_solutions(solutions):
+def is_valid_placement(grid_state: str, shape_id: str) -> bool:
+    """Check if the grid state is valid by comparing against the original shape file."""
     try:
-        normalized_solutions = {normalize_solution(s) for s in solutions}
-        with open(SOLUTIONS_FILE, 'w') as f:
-            json.dump(list(normalized_solutions), f)
-    except Exception as e:
-        logger.error(f"Error saving solutions: {str(e)}")
-
-def add_solution(solution):
-    solutions = load_solutions()
-    normalized = normalize_solution(solution)
-    
-    # Check if any rotation of this solution already exists
-    if normalized not in solutions:
-        solutions.add(normalized)
-        save_solutions(solutions)
-        return True
-    return False
-
-def is_solution_known(solution):
-    """Check if a solution is already known (including rotations)"""
-    solutions = load_solutions()
-    normalized = normalize_solution(solution)
-    return normalized in solutions
-
-def run_yass_solver(input_file, get_all_solutions=False):
-    """Run the yass solver with the given input file and return the result"""
-    try:
-        cmd = ["./yass/soma"]
-        if get_all_solutions:
-            cmd.extend(["-a", input_file])
-        else:
-            cmd.append(input_file)
-        logger.debug(f"Running command: {' '.join(cmd)}")
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode != 0:
-            logger.error(f"Solver error: {result.stderr}")
-            return None
-        return result.stdout
-    except Exception as e:
-        logger.error(f"Error running yass solver: {str(e)}")
-        return None
-
-def create_temp_file(content):
-    """Create a temporary file with the given content"""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.soma', delete=False) as f:
-        f.write(content)
-        return f.name
-
-def is_valid_placement(grid_state):
-    """Check if the grid state is valid"""
-    logger.debug(f"Validating grid state: {grid_state}")
-    
-    # Split into layers
-    layers = grid_state.strip().split('\n\n')
-    logger.debug(f"Number of layers: {len(layers)}")
-    
-    if len(layers) != 3:
-        logger.debug(f"Invalid layer count: {len(layers)}")
-        return False
-    
-    # Check each layer
-    for i, layer in enumerate(layers):
-        rows = layer.split('\n')
-        logger.debug(f"Layer {i} rows: {rows}")
+        # Load the original shape file
+        figures_dir = os.path.join(os.path.dirname(__file__), 'yass', 'figures')
+        shape_file = os.path.join(figures_dir, f"{shape_id}.soma")
         
-        if len(rows) != 3:
-            logger.debug(f"Invalid row count in layer {i}: {len(rows)}")
+        if not os.path.exists(shape_file):
+            logger.error(f"Shape file not found: {shape_file}")
             return False
+            
+        with open(shape_file, 'r') as f:
+            original_shape = f.read().strip()
+            
+        # Split both into layers
+        original_layers = original_shape.split('\n\n')
+        grid_layers = grid_state.strip().split('\n\n')
         
-        for j, row in enumerate(rows):
-            if len(row) != 3:
-                logger.debug(f"Invalid row length in layer {i}, row {j}: {len(row)}")
+        # Check layer count
+        if len(original_layers) != len(grid_layers):
+            logger.error(f"Layer count mismatch: original={len(original_layers)}, grid={len(grid_layers)}")
+            return False
+            
+        # Compare each layer
+        for i, (original_layer, grid_layer) in enumerate(zip(original_layers, grid_layers)):
+            original_rows = original_layer.strip().split('\n')
+            grid_rows = grid_layer.strip().split('\n')
+            
+            # Check row count
+            if len(original_rows) != len(grid_rows):
+                logger.error(f"Row count mismatch in layer {i}: original={len(original_rows)}, grid={len(grid_rows)}")
                 return False
-            
-            # Check if all characters are valid
-            for k, char in enumerate(row):
-                if char not in VALID_PIECES:
-                    logger.debug(f"Invalid character '{char}' at layer {i}, row {j}, col {k}")
+                
+            # Compare each row
+            for j, (original_row, grid_row) in enumerate(zip(original_rows, grid_rows)):
+                # Check row length
+                if len(original_row) != len(grid_row):
+                    logger.error(f"Row length mismatch in layer {i}, row {j}: original={len(original_row)}, grid={len(grid_row)}")
                     return False
-    
-    logger.debug("Grid state validation passed")
-    return True
-
-def normalize_solution(solution):
-    """Normalize a solution by rotating it to a canonical form"""
-    # Split into layers
-    layers = solution.strip().split('\n\n')
-    if len(layers) != 3:
-        return solution.strip()
-    
-    # Convert to 3D array for easier manipulation
-    grid = []
-    for layer in layers:
-        rows = layer.split('\n')
-        if len(rows) != 3:
-            return solution.strip()
-        grid.append([list(row) for row in rows])
-    
-    # Try all possible rotations and return the lexicographically smallest
-    min_solution = solution.strip()
-    
-    def rotate_2d_90_clockwise(matrix):
-        # Rotate a 2D matrix 90 degrees clockwise
-        return [list(row) for row in zip(*matrix[::-1])]
-    
-    def rotate_2d_90_counterclockwise(matrix):
-        # Rotate a 2D matrix 90 degrees counterclockwise
-        return [list(row) for row in zip(*matrix)][::-1]
-    
-    def rotate_cube_x(grid):
-        # Rotate the entire cube around X axis
-        # Rotate each layer 90 degrees clockwise
-        return [rotate_2d_90_clockwise(layer) for layer in grid]
-    
-    def rotate_cube_y(grid):
-        # Rotate the entire cube around Y axis
-        # For Y rotation, we need to transpose the layers and rotate them
-        transposed = list(zip(*grid))
-        return [rotate_2d_90_clockwise(list(layer)) for layer in transposed]
-    
-    def rotate_cube_z(grid):
-        # Rotate the entire cube around Z axis
-        # For Z rotation, we rotate each layer in place
-        return [rotate_2d_90_clockwise(layer) for layer in grid]
-    
-    def grid_to_string(grid):
-        # Convert 3D grid to string representation
-        layers = []
-        for layer in grid:
-            rows = [''.join(row) for row in layer]
-            layers.append('\n'.join(rows))
-        return '\n\n'.join(layers)
-    
-    # Try all possible rotations
-    for _ in range(4):
-        for _ in range(4):
-            for _ in range(4):
-                current_str = grid_to_string(grid)
-                if current_str < min_solution:
-                    min_solution = current_str
-
-                grid = rotate_cube_x(grid)
-            grid = rotate_cube_y(grid)
-        grid = rotate_cube_z(grid)
-    
-    return min_solution
-
-def extract_solution_from_output(output):
-    """Extract the solution from the solver's output"""
-    # Split by double newlines to get potential solutions
-    parts = output.split('\n\n')
-    
-    for part in parts:
-        lines = [line.strip() for line in part.split('\n') if line.strip()]
-        if not lines or not lines[0].startswith('solution #'):
-            continue
-            
-        # Skip the "solution #" line and get the actual solution
-        solution_lines = lines[1:]
-        if len(solution_lines) == 9:  # 3 layers of 3 rows each
-            # Group into layers
-            layers = [solution_lines[i:i+3] for i in range(0, 9, 3)]
-            if all(len(layer) == 3 and all(len(row) == 3 for row in layer) for layer in layers):
-                return '\n\n'.join('\n'.join(layer) for layer in layers)
-    return None
-
-def extract_all_solutions(output):
-    """Extract all solutions from the solver's output"""
-    solutions = []
-    current_solution = []
-    in_solution = False
-    
-    for line in output.split('\n'):
-        line = line.strip()
-        if not line:
-            continue
-            
-        if line.startswith('solution #'):
-            if current_solution:
-                solution = []
-                for i in range(0, 9, 3):
-                    layer = '\n'.join(current_solution[i:i+3])
-                    solution.append(layer)
-                solutions.append('\n\n'.join(solution))
-            current_solution = []
-            in_solution = True
-            continue
-            
-        if in_solution and len(current_solution) < 9:
-            current_solution.append(line)
-            
-    # Add the last solution if exists
-    if current_solution:
-        solution = []
-        for i in range(0, 9, 3):
-            layer = '\n'.join(current_solution[i:i+3])
-            solution.append(layer)
-        solutions.append('\n\n'.join(solution))
+                    
+                # Compare each cell
+                for k, (original_cell, grid_cell) in enumerate(zip(original_row, grid_row)):
+                    # If original cell is '.', grid cell must also be '.'
+                    if original_cell == '.' and grid_cell != '.':
+                        logger.error(f"Invalid piece placement at layer {i}, row {j}, col {k}: original='.', grid='{grid_cell}'")
+                        return False
+                    # If original cell is '*' or 'o', grid cell must be either '.' or a valid piece
+                    elif original_cell in VALID_GRID_SPACES and grid_cell not in VALID_PIECES:
+                        logger.error(f"Invalid piece at layer {i}, row {j}, col {k}: original='{original_cell}', grid='{grid_cell}'")
+                        return False
+                    # If grid cell is a piece, original cell must be '*' or 'o'
+                    elif grid_cell in VALID_PIECES and grid_cell != '.' and original_cell not in VALID_GRID_SPACES:
+                        logger.error(f"Piece placed in invalid position at layer {i}, row {j}, col {k}: original='{original_cell}', grid='{grid_cell}'")
+                        return False
         
-    return solutions 
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error validating grid state: {str(e)}")
+        return False
+
+def normalize_solution(solution: str, shape_id: str) -> str:
+    """Normalize a solution by rotating it to a canonical form."""
+    try:
+        figures_dir = os.path.join(os.path.dirname(__file__), 'yass', 'figures')
+        shape_file = os.path.join(figures_dir, f"{shape_id}.soma")
+        
+        if not os.path.exists(shape_file):
+            logger.error(f"Shape file not found: {shape_file}")
+            return solution.strip()
+            
+        with open(shape_file, 'r') as f:
+            original_shape = f.read().strip()
+            
+        original_layers = original_shape.split('\n\n')
+        original_height = len(original_layers[0].split('\n'))
+        original_width = len(original_layers[0].split('\n')[0])
+        original_depth = len(original_layers)
+        
+        # Convert solution to 3D array
+        layers = solution.strip().split('\n\n')
+        grid = [[list(row) for row in layer.split('\n')] for layer in layers]
+        height = len(grid[0])
+        width = len(grid[0][0])
+        depth = len(grid)
+        
+        def get_piece_positions(grid):
+            """Get the positions of all pieces in the grid."""
+            positions = []
+            for z in range(depth):
+                for y in range(height):
+                    for x in range(width):
+                        if grid[z][y][x] != '.':
+                            positions.append((x, y, z, grid[z][y][x]))
+            return positions
+        
+        def rotate_positions(positions, axis):
+            """Rotate piece positions around the given axis."""
+            rotated = []
+            for x, y, z, piece in positions:
+                if axis == 'x':
+                    new_x, new_y, new_z = x, -z, y
+                elif axis == 'y':
+                    new_x, new_y, new_z = z, y, -x
+                else:  # z
+                    new_x, new_y, new_z = -y, x, z
+                rotated.append((new_x, new_y, new_z, piece))
+            return rotated
+        
+        def positions_to_grid(positions):
+            """Convert piece positions back to a grid."""
+            grid = [[['.' for _ in range(width)] for _ in range(height)] for _ in range(depth)]
+            
+            # Find the minimum coordinates to normalize position
+            min_x = min(x for x, _, _, _ in positions)
+            min_y = min(y for _, y, _, _ in positions)
+            min_z = min(z for _, _, z, _ in positions)
+            
+            # Place pieces in grid, normalized to start at (0,0,0)
+            for x, y, z, piece in positions:
+                norm_x = x - min_x
+                norm_y = y - min_y
+                norm_z = z - min_z
+                if 0 <= norm_x < width and 0 <= norm_y < height and 0 <= norm_z < depth:
+                    grid[norm_z][norm_y][norm_x] = piece
+            
+            return grid
+        
+        def grid_to_string(grid):
+            """Convert grid to string format."""
+            layers = []
+            for layer in grid:
+                rows = [''.join(row) for row in layer]
+                layers.append('\n'.join(rows))
+            return '\n\n'.join(layers)
+        
+        positions = get_piece_positions(grid)
+        rotations = set()
+        
+        # Try all possible rotations (4 for each axis)
+        for _ in range(4):  # Z rotations
+            for _ in range(4):  # Y rotations
+                for _ in range(4):  # X rotations
+                    rotated_grid = positions_to_grid(positions)
+                    rotated_str = grid_to_string(rotated_grid)
+                    if is_valid_placement(rotated_str, shape_id):
+                        rotations.add(rotated_str)
+                    positions = rotate_positions(positions, 'x')
+                positions = rotate_positions(positions, 'y')
+            positions = rotate_positions(positions, 'z')
+        
+        if not rotations:
+            logger.error("No valid rotations found for the shape")
+            return solution.strip()
+            
+        min_solution = min(rotations)
+        logger.debug(f"Found {len(rotations)} unique rotations")
+        return min_solution
+        
+    except Exception as e:
+        logger.error(f"Error normalizing solution: {str(e)}")
+        return solution.strip()
+
+def handle_solution(shape_id: str, solution: str, check_only: bool = False) -> Tuple[bool, bool, Optional[str], int]:
+    """Handle a solution: validate, normalize, and optionally save it.
+    Returns (is_valid, is_new, normalized_solution, solution_count)"""
+    try:
+        if not is_valid_placement(solution, shape_id):
+            logger.error(f"Invalid placement for shape {shape_id}")
+            return False, False, None, 0
+
+        normalized = normalize_solution(solution, shape_id)
+        solutions = load_solutions(shape_id)
+        is_known = normalized in solutions
+        
+        if not is_known and not check_only:
+            solutions.add(normalized)
+            solutions_file = os.path.join(os.path.dirname(__file__), 'solutions', f"{shape_id}_solutions.json")
+            with open(solutions_file, 'w') as f:
+                json.dump(list(solutions), f)
+        
+        return True, not is_known, normalized, len(solutions)
+    except Exception as e:
+        logger.error(f"Error handling solution: {str(e)}")
+        return False, False, None, 0 
