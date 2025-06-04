@@ -15,6 +15,10 @@ CORS(app)
 def serve_index():
     return send_from_directory(app.static_folder, 'index.html')
 
+@app.route('/node_modules/<path:filename>')
+def serve_node_modules(filename):
+    return send_from_directory('../node_modules', filename)
+
 @app.route('/api/shapes')
 def get_shapes():
     try:
@@ -78,6 +82,7 @@ def get_solutions(shape_id):
 @app.route('/api/total-solutions/<shape_id>')
 def get_total_solutions(shape_id):
     try:
+        solutions = load_solutions(shape_id)
         soma_path = os.path.join(os.path.dirname(__file__), 'yass', 'figures', f"{shape_id}.soma")
         soma_executable = os.path.join(os.path.dirname(__file__), 'yass', 'soma')
         

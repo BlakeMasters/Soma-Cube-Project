@@ -1,23 +1,24 @@
 # Python-specific ignores
 __pycache__/
-*.pyc
-*.pyd
-.pytest_cache/
-.venv/
+*.py[cod]
+*$py.class
 venv/
+*.so
+.pytest_cache/
 env/
 *.egg-info
 solutions/
 
-# Node.js specific ignores
+# Node.js dependencies
 node_modules/
+package-lock.json
 
 # Editor swap files
 *.swp
 
 # OS generated files
 .DS_Store
-.venv/
+Thumbs.db
 
 # solutions file
 backend/solutions.json
