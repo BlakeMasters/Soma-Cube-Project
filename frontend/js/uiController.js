@@ -1,161 +1,181 @@
-import { Utilities } from './utils.js';
-import { GRID_SIZE, SOMA_PIECES, VALID_PIECES } from './constants.js';
+import { SOMA_PIECES, VALID_PIECES, SHAPE_IDS } from './constants.js';
 import * as THREE from 'three';
 
 export class UIController {
-    constructor(pieceManager) {
+    constructor(pieceManager, gridManager) {
         this.pieceManager = pieceManager;
+        this.gridManager = gridManager;
+        this.currentShapeId = 'cube';
+        this.initializeUI();
+    }
+
+    async initializeUI() {
+        this.createShapeSelector();
         this.initializeEventListeners();
+        await this.initializeSolutionCounts();
+        const controls = document.querySelector('.controls');
+        if (controls) {
+            controls.style.visibility = 'visible';
+        }
+    }
+
+    async initializeSolutionCounts() {
+        try {
+            await this.updateSolutionCounts();
+        } catch (error) {
+            console.error('Error initializing solution counts:', error);
+        }
+    }
+
+    showMessage(message, duration = 2000) {
+        const messageDiv = document.getElementById('message');
+        if (messageDiv) {
+            messageDiv.textContent = message;
+            messageDiv.style.display = 'block';
+            if (duration > 0) {
+                setTimeout(() => messageDiv.style.display = 'none', duration);
+            }
+        }
     }
 
     initializeEventListeners() {
-        document.getElementById('check-solution').addEventListener('click', () => this.checkSolution());
-        document.getElementById('get-hint').addEventListener('click', () => this.getHint());
-        document.getElementById('reset-grid').addEventListener('click', () => this.resetGrid());
-        document.getElementById('remove-selected').addEventListener('click', () => this.pieceManager.removeSelectedPiece());
+        const checkButton = document.getElementById('check-solution');
+        const resetButton = document.getElementById('reset-grid');
+        const removeButton = document.getElementById('remove-selected');
+        
+        if (checkButton) checkButton.addEventListener('click', () => this.checkSolution());
+        if (resetButton) resetButton.addEventListener('click', () => this.resetGrid());
+        if (removeButton) removeButton.addEventListener('click', () => this.pieceManager.removeSelectedPiece());
         window.addEventListener('keydown', (event) => this.handleKeyDown(event));
     }
 
+    setShapeId(shapeId) {this.currentShapeId = shapeId;}
+
     handleKeyDown(event) {
         if (!this.pieceManager.selectedPiece) return;
+        if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {event.preventDefault();}
         
-        if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
-            event.preventDefault();
-        }
-        
-        switch(event.key) {
-            case 'ArrowLeft': this.pieceManager.movePiece('x', -1); break;
-            case 'ArrowRight': this.pieceManager.movePiece('x', 1); break;
-            case 'ArrowUp': this.pieceManager.movePiece('y', 1); break;
-            case 'ArrowDown': this.pieceManager.movePiece('y', -1); break;
-            case 'z': this.pieceManager.movePiece('z', -1); break;
-            case 'x': this.pieceManager.movePiece('z', 1); break;
-            case 'r': this.pieceManager.rotatePiece('x'); break;
-            case 'f': this.pieceManager.rotatePiece('y'); break;
-            case 'v': this.pieceManager.rotatePiece('z'); break;
-            case 'Delete': this.pieceManager.removeSelectedPiece(); break;
-        }
+        const keyActions = {
+            'ArrowLeft': () => this.pieceManager.movePiece('x', -1),
+            'ArrowRight': () => this.pieceManager.movePiece('x', 1),
+            'ArrowUp': () => this.pieceManager.movePiece('y', 1),
+            'ArrowDown': () => this.pieceManager.movePiece('y', -1),
+            'z': () => this.pieceManager.movePiece('z', -1),
+            'x': () => this.pieceManager.movePiece('z', 1),
+            'r': () => this.pieceManager.rotatePiece('x'),
+            'f': () => this.pieceManager.rotatePiece('y'),
+            'v': () => this.pieceManager.rotatePiece('z'),
+            'Delete': () => this.pieceManager.removeSelectedPiece()
+        };
+
+        const action = keyActions[event.key];
+        if (action) action();
     }
 
     async checkSolution() {
         const gridState = this.scanGridState();
         
-        if (!this.isGridFilled(gridState)) {
-            Utilities.showMessage('Please fill all cells in the grid');
-            return false;
+        // Check if all valid grid spaces are filled
+        const occupiedCells = this.gridManager.occupiedCells;
+        
+        for (const cell of occupiedCells) {
+            const [x, y, z] = cell.split(',').map(Number);
+            if (!gridState[x][y][z]) {
+                this.showMessage('Please fill all cells in the grid');
+                return false;
+            }
         }
         
         const yassFormat = this.convertToYassFormat(gridState);
-        console.log('Sending yass format:', yassFormat); // Debug log
         
         try {
             const response = await fetch('/api/check-solution', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ grid_state: yassFormat })
+                body: JSON.stringify({ 
+                    grid_state: yassFormat,
+                    shape_id: this.currentShapeId
+                })
             });
             
             if (!response.ok) throw new Error('Failed to check solution');
             
             const data = await response.json();
-            console.log('Solution check response:', data); // Debug log
+            this.showMessage(data.message);
             
-            // Use the message from the backend response
-            Utilities.showMessage(data.message);
+            if (data.valid) {
+                await this.updateSolutionCounts();
+            }
+            
             return data.valid;
         } catch (error) {
             console.error('Error checking solution:', error);
-            Utilities.showMessage('Failed to check solution. Please try again.');
+            this.showMessage('Failed to check solution. Please try again.');
             return false;
         }
     }
 
-    isGridFilled(gridState) {
-        for (let x = 0; x < GRID_SIZE; x++) {
-            for (let y = 0; y < GRID_SIZE; y++) {
-                for (let z = 0; z < GRID_SIZE; z++) {
-                    if (!gridState[x][y][z]) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    hasOverlappingPieces(gridState) {
-        const pieceCounts = new Map();
-        
-        for (let x = 0; x < GRID_SIZE; x++) {
-            for (let y = 0; y < GRID_SIZE; y++) {
-                for (let z = 0; z < GRID_SIZE; z++) {
-                    const pieceId = gridState[x][y][z];
-                    if (pieceId) {
-                        pieceCounts.set(pieceId, (pieceCounts.get(pieceId) || 0) + 1);
-                    }
-                }
-            }
-        }
-
-        for (const [pieceId, count] of pieceCounts) {
-            const piece = SOMA_PIECES.find(p => p.id === pieceId);
-            if (piece && count > piece.baseShape.length) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    async getHint() {
-        const gridState = this.scanGridState();
-        
-        // Check for overlapping pieces
-        if (this.hasOverlappingPieces(gridState)) {
-            Utilities.showMessage('Pieces cannot overlap');
-            return null;
-        }
-
-        const yassFormat = this.convertToYassFormat(gridState);
-        
+    async resetGrid() {
         try {
-            const response = await fetch('/api/get-hint', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ grid_state: yassFormat })
-            });
+            this.pieceManager.updatePiecesPanel();
+            const success = await this.gridManager.loadGrid(this.currentShapeId);
             
-            if (!response.ok) throw new Error('Failed to get hint');
-            
-            const data = await response.json();
-            if (data.error) {
-                Utilities.showMessage(data.error);
-                return null;
+            if (success) {
+                await this.updateSolutionCounts();
+                this.showMessage('Grid has been reset');
+            } else {
+                this.showMessage('Failed to reset grid');
             }
-            Utilities.showMessage(data.hint);
-            return data.hint;
         } catch (error) {
-            console.error('Error getting hint:', error);
-            Utilities.showMessage('Failed to get hint. Please try again.');
-            return null;
+            console.error('Error resetting grid:', error);
+            this.showMessage('Error resetting grid');
         }
     }
 
-    resetGrid() {
-        // Remove all pieces from the scene
-        for (const id in this.pieceManager.placedPieces) {
-            this.pieceManager.renderer.scene.remove(this.pieceManager.placedPieces[id]);
+    async updateSolutionCounts() {
+        try {
+            const [currentCount, totalCount] = await Promise.all([
+                this.fetchCurrentSolutionCount(),
+                this.fetchTotalSolutions()
+            ]);
+            
+            this.updateSolutionCountDisplay(currentCount, totalCount);
+            
+            if (currentCount === totalCount && totalCount > 0) {
+                this.showMessage('CONGRATULATIONS! YOU HAVE FOUND EVERY SOLUTION TO THIS PUZZLE!', 0);
+            }
+        } catch (error) {
+            console.error('Error updating solution counts:', error);
         }
-        this.pieceManager.placedPieces = {};
-        this.pieceManager.selectedPiece = null;
-        this.pieceManager.updatePiecesPanel();
-        Utilities.showMessage('Grid has been reset');
+    }
+
+    updateSolutionCountDisplay(currentCount, totalCount) {
+        const countElement = document.getElementById('solution-count');
+        const totalElement = document.getElementById('total-solutions');
+        
+        if (countElement) countElement.textContent = currentCount;
+        if (totalElement) totalElement.textContent = totalCount;
+    }
+
+    async fetchCurrentSolutionCount() {
+        const response = await fetch(`/api/solutions/${this.currentShapeId}`);
+        if (!response.ok) return 0;
+        const solutions = await response.json();
+        return solutions.length;
+    }
+
+    async fetchTotalSolutions() {
+        const response = await fetch(`/api/total-solutions/${this.currentShapeId}`);
+        if (!response.ok) return 0;
+        const data = await response.json();
+        return data.total_solutions;
     }
 
     scanGridState() {
-        const currentState = Array(GRID_SIZE).fill().map(() => 
-            Array(GRID_SIZE).fill().map(() => 
-                Array(GRID_SIZE).fill(null)
+        const dimensions = this.gridManager.getDimensions();
+        const currentState = Array(dimensions.width).fill().map(() => 
+            Array(dimensions.height).fill().map(() => 
+                Array(dimensions.depth).fill(null)
             )
         );
         
@@ -168,9 +188,9 @@ export class UIController {
                 const gy = Math.floor(worldPos.y);
                 const gz = Math.floor(worldPos.z);
                 
-                if (gx >= 0 && gx < GRID_SIZE &&
-                    gy >= 0 && gy < GRID_SIZE &&
-                    gz >= 0 && gz < GRID_SIZE) {
+                if (gx >= 0 && gx < dimensions.width &&
+                    gy >= 0 && gy < dimensions.height &&
+                    gz >= 0 && gz < dimensions.depth) {
                     currentState[gx][gy][gz] = object.parent.userData.pieceId;
                 }
             }
@@ -180,20 +200,78 @@ export class UIController {
     }
 
     convertToYassFormat(gridState) {
+        const dimensions = this.gridManager.getDimensions();
         let yassFormat = '';
-        for (let z = 0; z < GRID_SIZE; z++) {
-            for (let y = 0; y < GRID_SIZE; y++) {
-                for (let x = 0; x < GRID_SIZE; x++) {
+        
+        for (let z = 0; z < dimensions.depth; z++) {
+            for (let y = 0; y < dimensions.height; y++) {
+                for (let x = 0; x < dimensions.width; x++) {
                     const pieceId = gridState[x][y][z];
-                    const yassChar = pieceId || '.';
-                    yassFormat += yassChar;
+                    
+                    if (this.gridManager.isOccupiedCell(x, y, z)) {
+                        const originalCell = this.gridManager.getOriginalCell(x, y, z);
+                        yassFormat += pieceId || originalCell;
+                    } else {
+                        yassFormat += '.';
+                    }
                 }
                 yassFormat += '\n';
             }
-            if (z < GRID_SIZE - 1) {
+            if (z < dimensions.depth - 1) {
                 yassFormat += '\n';
             }
         }
         return yassFormat;
+    }
+
+    createShapeSelector() {
+        const selectorContainer = document.getElementById('shape-selector');
+        if (!selectorContainer) {
+            console.error('Shape selector container not found');
+            return;
+        }
+
+        const label = document.createElement('label');
+        label.htmlFor = 'shape-select';
+        label.textContent = 'Select Shape: ';
+        
+        const select = document.createElement('select');
+        select.id = 'shape-select';
+        
+        SHAPE_IDS.forEach(shapeId => {
+            const option = document.createElement('option');
+            option.value = shapeId;
+            option.textContent = shapeId.charAt(0).toUpperCase() + shapeId.slice(1);
+            select.appendChild(option);
+        });
+
+        select.value = this.currentShapeId;
+        
+        select.addEventListener('change', async (e) => {
+            const newShapeId = e.target.value;
+            if (newShapeId !== this.currentShapeId) {
+                try {
+                    this.showMessage('Loading figure...');
+                    this.pieceManager.updatePiecesPanel();
+                    
+                    const success = await this.gridManager.loadGrid(newShapeId);
+                    if (success) {
+                        this.setShapeId(newShapeId);
+                        await this.updateSolutionCounts();
+                        this.showMessage('Figure loaded successfully');
+                    } else {
+                        this.showMessage('Failed to load figure');
+                        select.value = this.currentShapeId;
+                    }
+                } catch (error) {
+                    console.error('Error loading figure:', error);
+                    this.showMessage('Error loading figure');
+                    select.value = this.currentShapeId;
+                }
+            }
+        });
+
+        selectorContainer.appendChild(label);
+        selectorContainer.appendChild(select);
     }
 } 

@@ -18,7 +18,7 @@ export class Renderer {
         const aspect = window.innerWidth / window.innerHeight;
         this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
         this.camera.position.set(5, 5, 5);
-        this.camera.lookAt(GRID_SIZE/2, GRID_SIZE/2, GRID_SIZE/2);
+        this.camera.lookAt(0,0,0);
         
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -50,7 +50,7 @@ export class Renderer {
         this.controls.screenSpacePanning = false;
         this.controls.minDistance = 3;
         this.controls.maxDistance = 20;
-        this.controls.maxPolarAngle = Math.PI / 2;
+        this.controls.maxPolarAngle = Math.PI;
     }
 
     onWindowResize() {

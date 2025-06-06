@@ -8,8 +8,7 @@ This application provides an interactive GUI for working with SOMA cube puzzles 
 
 - Visualize and manipulate SOMA cube pieces in 3D
 - Build and validate custom SOMA cube configurations
-- Get hints for solving difficult puzzles
-- Generate and track all 240 unique solutions
+- Generate and track all unique solutions for each solvable shape in yass/figures
 
 The project combines a Flask backend that interfaces with the [Yass SOMA cube solver](https://github.com/thanks4opensource/yass) and a web-based frontend for user interaction.
 
@@ -34,7 +33,10 @@ soma-solver/
 │       ├── renderer.js      # Three.js rendering logic
 │       ├── uiController.js  # UI event handling and API calls
 │       └── utils.js         # Frontend utility functions
-└── requirements.txt         # Python dependencies
+├── node_modules/            # Node.js dependencies (Three.js)
+├── package.json            # Node.js project configuration
+├── package-lock.json       # Node.js dependency lock file
+└── requirements.txt        # Python dependencies
 ```
 
 ## Setup & Installation
@@ -42,7 +44,7 @@ soma-solver/
 ### Prerequisites
 
 - Python 3.6+ (Python 3.10+ recommended)
-- Node.js (optional, for development)
+- Node.js 14+ and npm (for Three.js dependencies)
 - Git
 
 ### Installation
@@ -53,14 +55,20 @@ soma-solver/
    cd soma-solver
    ```
 
-2. Compile the Yass solver using the included makefile:
+2. Install Node.js dependencies:
+   ```
+   npm install
+   ```
+   This will install Three.js and other required frontend dependencies.
+
+3. Compile the Yass solver using the included makefile:
    ```
    cd backend/yass
    make
    cd ../..
    ```
 
-3. Play around with yass using different inputs and flags
+4. Play around with yass using different inputs and flags
    ```
    ./soma -h
    ./soma -a figures/cube.soma
@@ -95,13 +103,11 @@ soma-solver/
 This application is currently in development with basic functionality implemented. The core features include:
 - Web-based GUI for SOMA cube visualization
 - Integration with the Yass solver for puzzle solutions
-- Basic puzzle validation and hint system
+- Basic puzzle validation for all solvable figures
 
 ## Future Plans
 
 We plan to enhance the application with the following features:
-
-- Implementing GUIs for varying solutions and pieces (pyramid, scorpion, 2x2x2)
 - Hint function will display next viable piece on the grid
 - User accounts to save puzzle progress
 - Library of classic SOMA cube challenges
