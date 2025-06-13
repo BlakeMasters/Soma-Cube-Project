@@ -1,6 +1,6 @@
 # SOMA Cube Puzzle Solver
 
-A web-based application for visualizing, creating, and solving SOMA cube puzzles by converting Three.js objects into text format for the YASS text-based solver
+A web-based application for visualizing, creating, and solving SOMA cube puzzles by converting Three.js objects into text format for the YASS text-based solver. This project is for California Polytechnic State University - San Luis Obispo CSC 481-01 Knowledge-Based Systems with Rodrigo Canaan.
 
 ## Overview
 
