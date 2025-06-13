@@ -1,3 +1,4 @@
+# File: backend/yass/Makefile
 # yass: Yet Another Soma Solver
 # Copyright (C) 2021 Mark R. Rubin aka "thanks4opensource"
 #
@@ -15,9 +16,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # (LICENSE.txt) along with the yass program.  If not, see
-# <https:#www.gnu.org/licenses/gpl.html>
+# <https://www.gnu.org/licenses/gpl.html>.
 
 
+# ------------------------------------------------------------------
+# ① Define FIGDIR so that the “solve” target knows where your dynamic .soma files live:
+FIGDIR := figures/tmp_gen
+
+# ------------------------------------------------------------------
 PROGRAM = soma
 
 CC = g++
@@ -29,33 +35,32 @@ WARN ?= -Wall -Wextra
 
 ROTATION ?= matrix
 ifeq ($(ROTATION), lambda)
-MATRIX = -U
-LAMBDA = -D
+	MATRIX = -U
+	LAMBDA = -D
 else ifeq ($(ROTATION), matrix)
-MATRIX = -D
-LAMBDA = -U
+	MATRIX = -D
+	LAMBDA = -U
 else
-MATRIX = -U
-LAMBDA = -U
-$(error ROTATION must be either matrix or lambda)
+	MATRIX = -U
+	LAMBDA = -U
+	$(error ROTATION must be either matrix or lambda)
 endif
 
 STD_SET ?= unordered
 ifeq ($(STD_SET), set)
-STD_SET_SET 	  := -D
-STD_SET_UNORDERED := -U
+	STD_SET_SET      := -D
+	STD_SET_UNORDERED := -U
 else ifeq ($(STD_SET), unordered)
-STD_SET_SET	  := -U
-STD_SET_UNORDERED := -D
+	STD_SET_SET      := -U
+	STD_SET_UNORDERED := -D
 else
-STD_SET_SET 	  := -U
-STD_SET_UNORDERED := -U
-$(error STD_SET must be either "set" or "unordered")
+	STD_SET_SET      := -U
+	STD_SET_UNORDERED := -U
+	$(error STD_SET must be either "set" or "unordered")
 endif
 
 OSTREAM_OPS ?= -U
 STATS ?= -U
-
 
 CC_OPTIONS = -std=$(STD)					\
 	     $(OPTIMIZE) 					\
@@ -70,11 +75,12 @@ CC_OPTIONS = -std=$(STD)					\
 
 OBJECTS = main.o soma.o piece.o shape.o rotators.o
 
-
-
+# ------------------------------------------------------------------
+# Default: build the soma binary
 $(PROGRAM): $(OBJECTS)
 	$(CC) $(PROFILE) $(OBJECTS) -o $(PROGRAM)
 
+# ------------------------------------------------------------------
 clean:
 	rm -f $(OBJECTS) $(PROGRAM)
 
@@ -174,3 +180,16 @@ shape.o: shape.cxx $(SHAPE_HXX) $(PIECE_HXX) $(ROTATORS_HXX) $(signature.hxx)
 
 rotators.o: rotators.cxx $(ROTATORS_hxx)
 	$(CC) -c $(CC_OPTIONS) $(INCLUDES) rotators.cxx
+
+# ------------------------------------------------------------------
+# ② Add a “solve” target that uses $(FIGDIR)/*.soma
+#
+#     This will pick up:
+#       figures/tmp_gen/piece1.soma, piece2.soma, …, well.soma
+#     And produce “solution.cube” in backend/yass/
+#
+.PHONY: solve
+solve: $(PROGRAM)
+	@echo "Running YASS on all .soma files in '$(FIGDIR)' …"
+	# -q = quiet, -cnt = exact cover/count mode. Adjust flags (e.g. -ant) if needed.
+	./soma -q -cnt -o solution.cube $(FIGDIR)/*.soma

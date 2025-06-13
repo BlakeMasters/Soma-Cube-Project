@@ -1,199 +1,290 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOMA Cube Solver</title>
-    
-    <!-- Three.js dependencies -->
-    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.152.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.152.0/examples/jsm/"
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SOMA Cube Solver</title>
+
+  <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.152.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.152.0/examples/jsm/",
+      "three/addons/controls/OrbitControls.js": "https://unpkg.com/three@0.152.0/examples/jsm/controls/OrbitControls.js"
     }
-    </script>
-    
-    <!-- Main application script -->
-    <script type="module" src="main.js"></script>
-    
-    <style>
-        /* Reset and base styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-        }
-        
-        body {
-            display: flex;
-            flex-direction: column;
-            background-color: #f0f0f0;
-        }
-        
-        /* Header styles */
-        h2 {
-            margin: 10px;
-            padding: 0;
-            color: #333;
-        }
-        
-        /* Controls section */
-        .controls {
-            display: flex;
-            gap: 10px;
-            padding: 10px;
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            z-index: 100;
-        }
-        
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            transition: background-color 0.2s;
-        }
-        
-        button:hover {
-            background-color: #45a049;
-        }
-        
-        /* Main container */
-        #container {
-            flex: 1;
-            position: relative;
-            width: 100%;
-            height: calc(100vh - 120px);
-        }
-        
-        #container canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-        
-        /* Pieces panel */
-        #pieces-panel {
-            position: fixed;
-            right: 20px;
-            top: 20px;
-            width: 200px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            z-index: 100;
-        }
-        
-        #pieces-panel h3 {
-            margin-bottom: 10px;
-            color: #333;
-        }
-        
-        .piece-item {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #f8f8f8;
-        }
-        
-        .piece-item:hover {
-            background-color: #e8e8e8;
-            transform: translateX(-2px);
-        }
-        
-        .piece-preview {
-            width: 30px;
-            height: 30px;
-            margin-right: 10px;
-            border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .piece-item span {
-            font-size: 14px;
-            color: #333;
-        }   
-        
-        #instructions {
-            position: fixed;
-            left: 20px;
-            bottom: 20px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            z-index: 100;
-        }
-        
-        #instructions p {
-            margin: 5px 0;
-            font-size: 14px;
-            color: #666;
-        }
+  }
+  </script>
 
-        #message {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            z-index: 1000;
-            display: none;
-        }
+  <script type="module" src="js/main.js"></script>
 
-    </style>
+  <style>
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    h2 {
+      margin: 10px 20px;
+      color: #333;
+    }
+
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 10px 20px;
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 100;
+      visibility: hidden;
+    }
+    .controls button {
+      padding: 8px 16px;
+      font-size: 14px;
+      background-color: #4CAF50;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .controls button:hover {
+      background-color: #45a049;
+    }
+    .shape-selector {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #solution-counter {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 20px;
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-top: 5px;
+    }
+    #solution-counter span {
+      font-size: 14px;
+      color: #333;
+    }
+
+
+    .form-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-top: 5px;
+    }
+    .form-section label {
+      font-size: 14px;
+      color: #333;
+    }
+    .form-section input[type="number"] {
+      width: 60px;
+      padding: 5px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .form-section button {
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+
+
+    .generate-solve {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-top: 5px;
+    }
+    .generate-solve input[type="file"],
+    .generate-solve input[type="number"] {
+      padding: 6px 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .generate-solve button {
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+
+
+    #container {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 260px); 
+    }
+    #container canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #pieces-panel {
+    position: fixed;
+    top: 160px;
+    right: 20px;     
+    left: auto;    
+    bottom: 20px;    
+    width: 200px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+    #pieces-container {
+        position: relative;
+        z-index: 100;
+        overflow-y: auto;
+        flex: 1; 
+    }
+    .piece-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      margin: 5px 0;
+      background: #f8f8f8;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .piece-item:hover {
+      background: #e8e8e8;
+      transform: translateX(-2px);
+    }
+    .piece-preview {
+      width: 30px;
+      height: 30px;
+      margin-right: 10px;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .piece-item span {
+      font-size: 14px;
+      color: #333;
+    }
+
+ 
+    #instructions {
+      position: fixed;
+      left: 20px;
+      bottom: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+    #instructions h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    #instructions p {
+      font-size: 14px;
+      color: #666;
+      margin: 4px 0;
+    }
+
+    /*“Grid reset”*/
+    #message {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 5px;
+      z-index: 1000;
+      display: none;
+    }
+  </style>
 </head>
-<body>
-    <h2>SOMA Cube Solver</h2>
-    
-    <div class="controls">
-        <button onclick="checkSolution()">Check Solution</button>
-        <button onclick="getHint()">Get Hint</button>
-        <button onclick="resetGrid()">Reset Grid</button>
-        <button onclick="removeSelectedPiece()">Remove Selected</button>
-    </div>
-    
-    <div id="instructions">
-        <h3>Controls:</h3>
-        <p>Arrow Keys: Move piece in X/Y plane</p>
-        <p>Z/X: Move piece in/out (Z axis)</p>
-        <p>R: Rotate around X axis</p>
-        <p>F: Rotate around Y axis</p>
-        <p>V: Rotate around Z axis</p>
-        <p>Delete: Remove selected piece</p>
-    </div>
-    
-    <div id="container"></div>
-    
-    <div id="pieces-panel">
-        <h3>Available Pieces</h3>
-        <div id="pieces-container"></div>
-    </div>
 
-    <div id="message"></div>
+<body>
+  <h2>SOMA Cube Solver</h2>
+
+  <div class="controls">
+    <div id="shape-selector" class="shape-selector"></div>
+    <button id="check-solution">Check Solution</button>
+    <button id="reset-grid">Reset Grid</button>
+    <button id="remove-selected">Remove Selected</button>
+  </div>
+
+  <div id="solution-counter">
+    <span>Solutions Found:</span>
+    <span id="solution-count">0</span>
+    <span>/</span>
+    <span id="total-solutions">0</span>
+  </div>
+
+  <div class="form-section">
+    <label>X: <input type="number" id="gridX" value="3" min="1"></label>
+    <label>Y: <input type="number" id="gridY" value="3" min="1"></label>
+    <label>Z: <input type="number" id="gridZ" value="3" min="1"></label>
+    <button id="applyGridBtn">Apply Grid Size</button>
+  </div>
+
+  <div class="generate-solve">
+    <form id="rulesForm" enctype="multipart/form-data" style="display: flex; align-items: center; gap: 10px;">
+      <input type="file" id="rulesFile" name="rules" accept=".txt" required />
+      <label>X: <input type="number" id="dimX" name="X" value="3" min="1"></label>
+      <label>Y: <input type="number" id="dimY" name="Y" value="3" min="1"></label>
+      <label>Z: <input type="number" id="dimZ" name="Z" value="3" min="1"></label>
+      <button type="submit">Generate Pieces</button>
+    </form>
+    <button id="solveBtn">Solve Generated</button>
+  </div>
+
+  <div id="instructions">
+    <h3>Controls:</h3>
+    <p>Arrow Keys: Move piece in X/Y plane</p>
+    <p>Z / X: Move piece along Z axis</p>
+    <p>R: Rotate around X axis</p>
+    <p>F: Rotate around Y axis</p>
+    <p>V: Rotate around Z axis</p>
+    <p>Delete: Remove selected piece</p>
+  </div>
+
+  <div id="container"></div>
+
+  <div id="pieces-panel">
+    <h3>Available Pieces</h3>
+    <div id="pieces-container"></div>
+  </div>
+
+  <div id="message"></div>
 </body>
 </html>

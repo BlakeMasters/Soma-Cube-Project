@@ -1,6 +1,6 @@
 # SOMA Cube Puzzle Solver
 
-A web-based application for visualizing, creating, and solving SOMA cube puzzles by converting Three.js objects into text format for the YASS text-based solver
+A web-based application for visualizing, creating, and solving SOMA cube puzzles by converting Three.js objects into text format for the YASS text-based solver. This project is for California Polytechnic State University - San Luis Obispo CSC 481-01 Knowledge-Based Systems with Rodrigo Canaan.
 
 ## Overview
 
@@ -9,8 +9,8 @@ This application provides an interactive GUI for working with SOMA cube puzzles 
 - Visualize and manipulate SOMA cube pieces
 - Build custom SOMA cube configurations
 - Validate puzzle configurations
-- Get hints for solving difficult puzzles
-- Generate complete solutions
+- Generate complete solutions to 3D Rectangular Grids
+- Attempt to solve known solutions outside of 3x3x3
 
 The project combines a Flask backend that interfaces with the [Yass SOMA cube solver](https://github.com/thanks4opensource/yass) and a web-based frontend for user interaction.
 
@@ -20,14 +20,23 @@ The project combines a Flask backend that interfaces with the [Yass SOMA cube so
 soma-puzzle-solver/
 ├── backend/
 │   ├── app.py             # Flask server and API endpoints
+│   ├── carver.py          # DFS piece carving
+│   ├── piece_carver.py    # Flask API endpoints and puzzle cleaning
+│   ├── test_carver.py     # Verify only unique pieces
+│   ├── soma_grid.py       # 
+│   ├── utils.py           # 
 │   ├── shapes.json        # SOMA pieces definitions
 │   └── yass/              # Yass solver (cloned from GitHub)
 ├── frontend/
 │   ├── index.html         # Main HTML interface
 │   ├── main.js            # Frontend application logic
-│   ├── styles.css         # Application styling
+│   ├── styles.css         # Application styling ## Moved to script inside index
 │   └── assets/            # Images and other static assets
 └── requirements.txt       # Python dependencies
+├── Example Rules txt files/
+│   ├── 2x2x2_incorrect    # Inpossible with unique, but possible without puzzle piece generation rules
+│   ├── 2x2x2_rules        # Correct 2x2x2 cube puzzle piece rules
+│   └── soma3x3x3_rules    # Rules for the SOMA cube. Lack of piece restrictions yield a different unique set from the SOMA puzzle
 ```
 
 ## Setup & Installation
@@ -112,3 +121,15 @@ We plan to enhance the application with the following features:
 ## License
 
 [MIT License](LICENSE)
+
+
+
+
+## General Running Tips
+
+- Rightclick + drag moves the grid (up/down zoom left/right move)
+- leftclick + drag rotates the grid
+- Drop Down menu selects abstract shapes loadable on the 3D grid.
+- Reset Grid clears to the base grid selection overriding x,y,z selection
+- Piece generation requires a legal rules.txt format, examples can be found in Example Rules txt files
+- Delete is not cached to more than one shape given this is not a GUI focused product.
