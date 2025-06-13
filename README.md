@@ -20,12 +20,17 @@ The project combines a Flask backend that interfaces with the [Yass SOMA cube so
 soma-puzzle-solver/
 ├── backend/
 │   ├── app.py             # Flask server and API endpoints
+│   ├── carver.py          # DFS piece carving
+│   ├── piece_carver.py    # Flask API endpoints and puzzle cleaning
+│   ├── test_carver.py     # Verify only unique pieces
+│   ├── soma_grid.py       # 
+│   ├── utils.py           # 
 │   ├── shapes.json        # SOMA pieces definitions
 │   └── yass/              # Yass solver (cloned from GitHub)
 ├── frontend/
 │   ├── index.html         # Main HTML interface
 │   ├── main.js            # Frontend application logic
-│   ├── styles.css         # Application styling
+│   ├── styles.css         # Application styling ## Moved to script inside index
 │   └── assets/            # Images and other static assets
 └── requirements.txt       # Python dependencies
 ```
