@@ -33,6 +33,10 @@ soma-puzzle-solver/
 │   ├── styles.css         # Application styling ## Moved to script inside index
 │   └── assets/            # Images and other static assets
 └── requirements.txt       # Python dependencies
+├── Example Rules txt files/
+│   ├── 2x2x2_incorrect    # Inpossible with unique, but possible without puzzle piece generation rules
+│   ├── 2x2x2_rules        # Correct 2x2x2 cube puzzle piece rules
+│   └── soma3x3x3_rules    # Rules for the SOMA cube. Lack of piece restrictions yield a different unique set from the SOMA puzzle
 ```
 
 ## Setup & Installation
@@ -117,3 +121,15 @@ We plan to enhance the application with the following features:
 ## License
 
 [MIT License](LICENSE)
+
+
+
+
+## General Running Tips
+
+- Rightclick + drag moves the grid (up/down zoom left/right move)
+- leftclick + drag rotates the grid
+- Drop Down menu selects abstract shapes loadable on the 3D grid.
+- Reset Grid clears to the base grid selection overriding x,y,z selection
+- Piece generation requires a legal rules.txt format, examples can be found in Example Rules txt files
+- Delete is not cached to more than one shape given this is not a GUI focused product.

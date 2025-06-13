@@ -26,6 +26,10 @@ CORS(app)
 
 app.register_blueprint(carver_bp, url_prefix='/api')
 
+@app.route('/')
+def serve_index():
+    return send_from_directory(app.static_folder, 'index.html')
+
 @app.route('/api/shapes')
 def get_shapes():
     try:
