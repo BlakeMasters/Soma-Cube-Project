@@ -9,8 +9,8 @@ This application provides an interactive GUI for working with SOMA cube puzzles 
 - Visualize and manipulate SOMA cube pieces
 - Build custom SOMA cube configurations
 - Validate puzzle configurations
-- Get hints for solving difficult puzzles
-- Generate complete solutions
+- Generate complete solutions to 3D Rectangular Grids
+- Attempt to solve known solutions outside of 3x3x3
 
 The project combines a Flask backend that interfaces with the [Yass SOMA cube solver](https://github.com/thanks4opensource/yass) and a web-based frontend for user interaction.
 
